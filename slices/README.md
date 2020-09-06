@@ -8,4 +8,4 @@ import (
 ラスタ画像と呼ばれるものは画像内のドット一つ一つの色を指定することで、画像を表示します。なので２次元配列でそれぞれのドットの位置の色を指定してあげれば良いのです。
 本来はRGBの３色(各8bit)で指定するのですが、今回はグレースケールなので白〜黒までを8bitで表現します。なのでuint8型で配列を定義すれば良いです。
 
-※　このコードは[Exercise: Slices][https://tour.golang.org/moretypes/18]でお試しください。
+※　このコードは[Exercise: Slices](https://tour.golang.org/moretypes/18)でお試しください。

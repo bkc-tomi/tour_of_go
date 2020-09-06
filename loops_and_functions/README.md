@@ -9,3 +9,5 @@ z -= (z*z - x) / (2*z)
 
 これを繰り返すと平方根が求まるので、for文が必要になります。
 また平方根は正の値しか存在しないので、if文で正の値のみを処理するようにしてあげる必要があります。
+
+[Exercise: Loops and Functions][https://tour.golang.org/flowcontrol/8]

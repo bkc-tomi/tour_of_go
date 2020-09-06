@@ -1,8 +1,3 @@
-/*
-A Tour of Go Exercise: Loops and Functions
-if文とfor文を使用して平方根を求めるプログラムを作る。
-*/
-
 package main
 
 import (

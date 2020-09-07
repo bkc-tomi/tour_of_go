@@ -24,7 +24,7 @@ func main() {
 ```
 クロージャー関数は今回のフィボナッチ数列のように**前回の結果から今回の結果を求めるような処理**をする際に有効的です。フィボナッチ数列は以下のような式で定義されている数列です。
 
-<img src="https://latex.codecogs.com/gif.latex?a_{n3}&space;=&space;a_{n2}&space;&plus;&space;a_{n1}" title="a_{n3} = a_{n2} + a_{n1}" />
+<img src="https://latex.codecogs.com/gif.latex?a_{n}&space;=&space;a_{n-1}&space;&plus;&space;a_{n-2}" title="a_{n} = a_{n-1} + a_{n-2}" />
 
 数式に日頃親しんでない方には複雑に見えるかもしれませんが、要は前に求めた２つから次の値を求めましょうということを式で表現しただけです。なのでフィボナッチ数列では最初の値は二つは一般的に0と1を与えてあります(数列は[0, 1])。なので次の値は２つを足した１になり数列は[0, 1, 1]。次は前の２つを足した２になるので数列は[0, 1, 1, 2]となっていきます。[Wikipedia](https://ja.wikipedia.org/wiki/%E3%83%95%E3%82%A3%E3%83%9C%E3%83%8A%E3%83%83%E3%83%81%E6%95%B0)
 

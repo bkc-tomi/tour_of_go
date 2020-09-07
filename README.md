@@ -8,3 +8,4 @@
     - Map
     - Fibonacci Closure
     - Stringers
+    - Errors

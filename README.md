@@ -9,3 +9,6 @@
     - Fibonacci Closure
     - Stringers
     - Errors
+    - Reader
+    - rot13Reader(理解不十分)
+    - Images

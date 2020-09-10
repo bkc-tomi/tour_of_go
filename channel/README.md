@@ -150,13 +150,13 @@ func main() {
 }
 /*
 実行結果
-matsumuratomiakira@mbp:~/go/src/tour_of_go/channel/buffer (master)
+:~/go/src/tour_of_go/channel/buffer (master)
 $ ./buffer 
 fatal error: all goroutines are asleep - deadlock!
 
 goroutine 1 [chan send]:
 main.main()
-        /Users/matsumuratomiakira/go/src/tour_of_go/channel/buffer/buffer.go:11 +0x9b
+        /Users/go/src/tour_of_go/channel/buffer/buffer.go:11 +0x9b
 */
 ```
 同時に持てる量なので以下のようにchannelからそのつど送信を行ったあとだと受信することが出来ます。

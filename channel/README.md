@@ -159,7 +159,7 @@ main.main()
         /Users/go/src/tour_of_go/channel/buffer/buffer.go:11 +0x9b
 */
 ```
-同時に持てる量なので以下のようにchannelからそのつど送信を行ったあとだと受信することが出来ます。
+同時に持てる量なので以下のようにchannelからそのつど送信を行ったあとだと受信することが出来る。
 ```
 func main() {
 	ch := make(chan int, 2)
@@ -175,3 +175,135 @@ func main() {
 2
 3
 ```
+
+## range and close
+close(ch chan)でチャンネルを閉じることが出来る。チャンネルを閉じると値を受信することが出来なくなる。チャンネルを閉じた後も値の送信は出来る。<br>
+チャンネルからは値と真偽値を受け取ることが出来ます。v, ok := <-ch
+```
+func a(c chan int) {
+	c <- 1
+}
+
+func main() {
+	ch := make(chan int, 10)
+	a(ch)
+	close(ch)
+	v, ok := <-ch
+
+	if ok {
+		fmt.Println(v, ok)
+	} else {
+		fmt.Println("channel closed.")
+	}
+}
+/*
+実行結果
+1 true
+*/
+```
+```
+func a(c chan int) {
+	c <- 1
+}
+
+func main() {
+	ch := make(chan int, 10)
+	a(ch)
+	close(ch)
+	a(ch)
+	v, ok := <-ch
+
+	if ok {
+		fmt.Println(v, ok)
+	} else {
+		fmt.Println("channel closed.")
+	}
+}
+/*
+実行結果
+panic: send on closed channel
+
+goroutine 1 [running]:
+main.a(...)
+	/tmp/sandbox643135727/prog.go:8
+main.main()
+	/tmp/sandbox643135727/prog.go:20 +0x91
+*/
+```
+チャンネルを閉じるのは、呼び出す先の関数に記述していても機能する。
+```
+func b(c chan int) {
+	c <- 2
+	close(c)
+}
+
+func main() {
+	ch := make(chan int, 10)
+	b(ch)
+	b(ch)
+	v, ok := <-ch
+
+	if ok {
+		fmt.Println(v, ok)
+	} else {
+		fmt.Println("channel closed.")
+	}
+}
+/*
+実行結果
+panic: send on closed channel
+
+goroutine 1 [running]:
+main.b(...)
+	/tmp/sandbox201782908/prog.go:12
+main.main()
+	/tmp/sandbox201782908/prog.go:19 +0x91
+*/
+```
+何も値を受信しておらず、かつチャンネルが閉じている時はv, ok := <-chのokはfalseを受信する。
+```
+func main() {
+	ch := make(chan int, 10)
+	close(ch)
+	v, ok := <-ch
+
+	fmt.Println(v, ok)
+}
+/*
+実行結果
+0 false
+*/
+```
+複数の値を受信している場合はrangeでループを回すことが出来る。この時ループはチャンネルが閉じられているところまで繰り返される。なのでrangeで回す時は、その前にclose()で必ず閉じておく必要がある。閉じていなかった場合は、パニックを起こします。
+```
+func c(c chan int) {
+	for i := 0; i < 10; i++ {
+		c <- i
+	}
+}
+
+func main() {
+	ch := make(chan int, 10)
+	c(ch)
+	close(ch)
+	for c := range ch {
+		fmt.Println(c)
+	}
+}
+/*
+実行結果
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+*/
+```
+注：チャネルを閉じる必要があるのは送信側だけで、受信側は閉じないでください。閉じたチャネルで送信すると、パニックが発生します。
+<br>
+別のメモ：チャネルはファイルとは異なります。通常は閉じる必要はありません。閉じる必要があるのは、rangeループを終了するなど、受信側に値が来ないことを通知する必要がある場合のみです。

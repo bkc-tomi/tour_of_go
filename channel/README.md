@@ -393,9 +393,9 @@ fatal error: all goroutines are asleep - deadlock!
 
 goroutine 1 [select]:
 main.fibonacci(0xc0000200c0, 0xc000020120)
-        /Users/matsumuratomiakira/go/src/tour_of_go/channel/select/select.go:11 +0xe8
+        /go/src/tour_of_go/channel/select/select.go:11 +0xe8
 main.main()
-        /Users/matsumuratomiakira/go/src/tour_of_go/channel/select/select.go:29 +0xd7
+        /go/src/tour_of_go/channel/select/select.go:29 +0xd7
 */
 ```
 以下のようにfibonacci関数側ではなく即時関数側にselect文を書いて同じ実装も可能。

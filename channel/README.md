@@ -77,9 +77,9 @@ goroutineは並行処理なのでどの処理から先に完了するか分か�
 - buffer で、一度に扱えるメッセージ量を指定できる
 
 channelはmake(chan 型)で宣言し <- で受信・送信を行う。<br>
-ch <- :受信<br>
-<- ch :送信<br>
-以下のコードと実行結果を見れば、(1)でch自身を出力しているのを見れば、チャンネルはポインター的な役割なのがわかる。
+ch <- :Sender チャンネルに送信<br>
+<- ch :Reciever チャンネルから受信<br>
+以下のコードと実行結果を見れば、(1)でch自身を出力しているのを見れば、チャンネルはポインターのようにメモリのアドレスを指している。
 非同期処理内で指定した型の値を受け取る。処理の外で別の変数に取得した値を渡す。
 
 ```
@@ -274,7 +274,7 @@ func main() {
 0 false
 */
 ```
-複数の値を受信している場合はrangeでループを回すことが出来る。この時ループはチャンネルが閉じられているところまで繰り返される。なのでrangeで回す時は、その前にclose()で必ず閉じておく必要がある。閉じていなかった場合は、パニックを起こします。
+複数の値を送信から受け取っている場合はrangeでループを回すことが出来る。この時ループはチャンネルが閉じられているところまで繰り返される。なのでrangeで回す時は、その前にclose()で必ず閉じておく必要がある。閉じていなかった場合は、パニックを起こします。
 ```
 func c(c chan int) {
 	for i := 0; i < 10; i++ {
@@ -304,6 +304,174 @@ func main() {
 9
 */
 ```
-注：チャネルを閉じる必要があるのは送信側だけで、受信側は閉じないでください。閉じたチャネルで送信すると、パニックが発生します。
+注：チャネルを閉じる必要があるのは送信側だけで、受信側は閉じないでください。閉じたチャネルに送信すると、パニックが発生します。
 <br>
 別のメモ：チャネルはファイルとは異なります。通常は閉じる必要はありません。閉じる必要があるのは、rangeループを終了するなど、受信側に値が来ないことを通知する必要がある場合のみです。
+
+## Select
+select文はswitch文と似ていますがswitch文と異なり、チャンネルが送信できるか受信できるかによって操作を分岐する文です。goroutineが複数の通信操作を待機できるようになります。
+selectは、そのケースの1つが実行可能になるまでブロックし、その後そのケースを実行します。複数の準備ができている場合は、ランダムに1つを選択します。
+<br />
+<br />
+下の例では以前やったフィボナッチ数列をgoroutine, channel, selectを使ってやっている。コードからは処理の流れが読み取りにくいが次のようなことをやっている。
+<br />
+main()
+
+1. チャンネルc, quitの定義
+2. 即時関数の実行
+3. fibonacci()の実行:quitは何も受信してないため、quitから送信できない。cは受信可能なので*2が実行される
+4. cからの送信が可能になるため即時関数内のループのi=0回目を実行し、Println()でcから受信した値を表示
+5. 3.を実行
+6. 4.を実行
+以後これをi=9まで合計10回繰り返す。
+7. 即時関数のforループが終了したので、quitが0を受信する。
+8. fibonacci()の実行:quitが0を受信しているので*1が実行され、returnでfibonacci()は終了される。
+
+<br />
+
+```
+func fibonacci(c, quit chan int) {
+	x, y := 0, 1
+	for {
+		select {
+		case <-quit: // *1
+			time.Sleep(200 * time.Millisecond)
+			fmt.Println("quit")
+			return
+		case c <- x: // *2
+			time.Sleep(200 * time.Millisecond)
+			x, y = y, x+y
+		}
+	}
+}
+
+func main() {
+	fmt.Println("go start.")
+	c := make(chan int)
+	quit := make(chan int)
+	go func() {
+		for i := 0; i < 10; i++ {
+			fmt.Println(<-c)
+		}
+		quit <- 0
+	}()
+	fibonacci(c, quit)
+}
+/*
+実行結果
+$ ./select 
+go start.
+0
+1
+略
+34
+quit
+*/
+```
+以下の場合だと、fibonacci()を実行後に即時関数を実行する手順になる。fibonacchi()でチャンネルcから受信する必要があるが、cの中身はからなのでdeadlockが発生しエラーになる。並行処理の後に持ってくる必要がある。
+```
+func main() {
+	c := make(chan int)
+	quit := make(chan int)
+
+	fmt.Println("go start.")
+
+	fibonacci(c, quit)
+	go func() {
+		for i := 0; i < 10; i++ {
+			fmt.Println(<-c)
+		}
+		quit <- 0
+	}()
+
+}
+/*
+実行結果
+$ ./select 
+go start.
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [select]:
+main.fibonacci(0xc0000200c0, 0xc000020120)
+        /Users/matsumuratomiakira/go/src/tour_of_go/channel/select/select.go:11 +0xe8
+main.main()
+        /Users/matsumuratomiakira/go/src/tour_of_go/channel/select/select.go:29 +0xd7
+*/
+```
+以下のようにfibonacci関数側ではなく即時関数側にselect文を書いて同じ実装も可能。
+```
+func fibonacci(c, quit chan int) {
+	x, y := 0, 1
+	for i := 0; i < 10; i++ {
+		time.Sleep(200 * time.Millisecond)
+		c <- x
+		x, y = y, x+y
+	}
+	quit <- 0
+}
+
+func main() {
+	c := make(chan int)
+	quit := make(chan int)
+	fmt.Println("go start.")
+
+	go fibonacci(c, quit)
+	func() {
+		for {
+			select {
+			case v := <-c:
+				fmt.Println(v)
+			case <-quit:
+				fmt.Println("quit")
+				return
+			}
+		}
+	}()
+}
+/*
+実行結果(略)
+*/
+```
+
+defaultを使うと、他のケースの準備ができていないときに行う処理を実装できる。以下の例では1秒ごとにtick.を表示し3秒後にBOOM!を表示する。それ以外の場合は0.5秒感覚で"    ."を表示する(defaultの処理)。<br/>
+このようにチャンネルから受信・送信するまでに別の処理をさせておくこともできる。
+```
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	tick := time.Tick(1000 * time.Millisecond)
+	boom := time.After(3000 * time.Millisecond)
+	for {
+		select {
+		case <-tick:
+			fmt.Println("tick.")
+		case <-boom:
+			fmt.Println("BOOM!")
+			return
+		default:
+			fmt.Println("    .")
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+}
+/*
+実行結果
+    .
+    .
+tick.
+    .
+    .
+tick.
+    .
+    .
+BOOM!
+(3秒をカウント！)
+*/
+```
+引用:[a tour of go](https://tour.golang.org/concurrency/6)
+

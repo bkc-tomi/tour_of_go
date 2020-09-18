@@ -12,3 +12,7 @@
     - Reader
     - rot13Reader(理解不十分)
     - Images
+    - Equivalent Binary Trees
+    - Web Crawler
+
+2020/09/18
